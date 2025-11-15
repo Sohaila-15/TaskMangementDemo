@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TaskMangementDemo.Data;
 using TaskMangementDemo.Models;
+using TaskMangementDemo.Data;
 
 namespace TaskMangementDemo.Controllers
 {
@@ -9,66 +8,68 @@ namespace TaskMangementDemo.Controllers
     [Route("api/[controller]")]
     public class TasksController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly TaskFileService _fileService;
 
-        public TasksController(AppDbContext context)
+        public TasksController(TaskFileService fileService)
         {
-            _context = context;
+            _fileService = fileService;
         }
 
-   
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskItem>>> GetTasks()
+        public ActionResult<List<TaskItem>> GetAll()
         {
-            return await _context.Tasks.ToListAsync();
+            return _fileService.LoadTasks();
         }
 
-      
         [HttpGet("{id}")]
-        public async Task<ActionResult<TaskItem>> GetTask(int id)
+        public ActionResult<TaskItem> Get(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var tasks = _fileService.LoadTasks();
+            var task = tasks.FirstOrDefault(x => x.Id == id);
+
             if (task == null) return NotFound();
+
             return task;
         }
 
-
         [HttpPost]
-        public async Task<ActionResult<TaskItem>> CreateTask(TaskItem task)
+        public ActionResult<TaskItem> Create(TaskItem task)
         {
-            _context.Tasks.Add(task);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
+            var tasks = _fileService.LoadTasks();
+
+            task.Id = tasks.Count == 0 ? 1 : tasks.Max(t => t.Id) + 1;
+
+            tasks.Add(task);
+            _fileService.SaveTasks(tasks);
+
+            return Ok(task);
         }
 
-
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(int id, TaskItem updatedTask)
+        public IActionResult Update(int id, TaskItem updatedTask)
         {
-            // Find the existing task by ID
-            var task = await _context.Tasks.FindAsync(id);
-            if (task == null)
-                return NotFound();
+            var tasks = _fileService.LoadTasks();
+            var task = tasks.FirstOrDefault(t => t.Id == id);
 
-            // Update only the fields you want
+            if (task == null) return NotFound();
+
             task.Title = updatedTask.Title;
             task.Description = updatedTask.Description;
 
-            await _context.SaveChangesAsync();
-
-            return NoContent(); // 204 response
+            _fileService.SaveTasks(tasks);
+            return NoContent();
         }
 
-
-      
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTask(int id)
+        public IActionResult Delete(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var tasks = _fileService.LoadTasks();
+            var task = tasks.FirstOrDefault(t => t.Id == id);
+
             if (task == null) return NotFound();
 
-            _context.Tasks.Remove(task);
-            await _context.SaveChangesAsync();
+            tasks.Remove(task);
+            _fileService.SaveTasks(tasks);
 
             return NoContent();
         }
