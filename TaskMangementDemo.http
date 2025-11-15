@@ -1,6 +1,16 @@
 @TaskMangementDemo_HostAddress = http://localhost:5141
 
-GET {{TaskMangementDemo_HostAddress}}/weatherforecast/
+GET {{TaskMangementDemo_HostAddress}}/api/tasks
 Accept: application/json
+
+###
+
+POST {{TaskMangementDemo_HostAddress}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Test Task",
+  "description": "This is a sample task"
+}
 
 ###
